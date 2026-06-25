@@ -1,6 +1,6 @@
-# ignore all
-*
+# # ignore all
+# *
 
-# But not this
-!*.py
-!*/
+# # But not this
+# !*.py
+# !*/
