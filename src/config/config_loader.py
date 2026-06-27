@@ -1,13 +1,9 @@
-from pydantic import BaseModel, Field, model_validator, field_validator, ValidationError
+from pydantic import BaseModel, Field, model_validator, field_validator, \
+    ValidationError
 from typing import Annotated
-import sys
+
 
 class Config(BaseModel):
-    def __init__(self, file_name):
-        cfg = load_config(file_name)
-        # print(cfg)
-        super().__init__(**cfg)
-
     # The constrains will need to be more precise, maze cant be 2x2
     width: int = Field(ge=0)
     height: int = Field(ge=0)
@@ -35,43 +31,59 @@ class Config(BaseModel):
             return self
 
 
-    @staticmethod
-    def load_config(file_name: str) -> dict[str, str]:
-        """Parses the given config file and returns a dict of k, v pairs
-        
-        Returns stripped value, key pair. It does not support the "" operator
-        and also strips all spaces.
-        """
+def load_config(file_name: str) -> dict[str, str]:
+    """Parses the given config file and returns a dict of k, v pairs
 
-        allowed = {
+    Returns stripped value, key pair. It does not support the "" operator
+    and also strips all spaces.
+    """
+
+    allowed = {
         "width",
         "height",
         "entry",
         "exit",
         "output_file",
         "perfect"
-        }
+    }
 
-        cfg = {}
+    cfg = {}
 
-        with open(file_name) as f:
-            for line in f:
-                # Remove any trailing white spaces
-                line = line.strip().lower()
+    with open(file_name) as f:
+        for line in f:
+            # Remove any trailing white spaces
+            line = line.strip().lower()
 
-                # If empty or is a comment skip
-                if not line or line.startswith('#'):
-                    continue
+            # If empty or is a comment skip
+            if not line or line.startswith('#'):
+                continue
 
-                key, _, val = line.partition("=")
+            key, _, val = line.partition("=")
 
-                # Checks if the partition method actually found the seperator
-                if not val:
-                    continue
-                # Checks if key is relevant to our config
-                if key in allowed:
-                    # Strips any spaces again and removes comments
-                    val = val.strip().split(" ", 1)[0]
-                    cfg[key.strip()] = val
-                    cfg.update()
-        return cfg
+            # Checks if the partition method actually found the seperator
+            if not val:
+                continue
+            # Checks if key is relevant to our config
+            if key in allowed:
+                # Strips any spaces again and removes comments
+                val = val.strip().split(" ", 1)[0]
+                cfg[key.strip()] = val
+                cfg.update()
+    return cfg
+
+
+def loading_setup(file_name: str) -> Config | None:
+    """Takes in a config file name, loads it and parses it
+
+    Returns Config model when succesful or None if parsing failed
+    """
+    try:
+        config = Config(**load_config(file_name))
+    except ValidationError as e:
+        for error in e.errors():
+            msg: str = error.get("msg")
+            key = error.get("loc")
+            print(f"Value {key[0]}: {msg}")
+        return None
+    else:
+        return config
