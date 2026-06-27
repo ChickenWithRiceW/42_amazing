@@ -35,43 +35,43 @@ class Config(BaseModel):
             return self
 
 
-@staticmethod
-def load_config(file_name: str) -> dict[str, str]:
-    """Parses the given config file and returns a dict of k, v pairs
-    
-    Returns stripped value, key pair. It does not support the "" operator
-    and also strips all spaces.
-    """
+    @staticmethod
+    def load_config(file_name: str) -> dict[str, str]:
+        """Parses the given config file and returns a dict of k, v pairs
+        
+        Returns stripped value, key pair. It does not support the "" operator
+        and also strips all spaces.
+        """
 
-    allowed = {
-    "width",
-    "height",
-    "entry",
-    "exit",
-    "output_file",
-    "perfect"
-    }
+        allowed = {
+        "width",
+        "height",
+        "entry",
+        "exit",
+        "output_file",
+        "perfect"
+        }
 
-    cfg = {}
+        cfg = {}
 
-    with open(file_name) as f:
-        for line in f:
-            # Remove any trailing white spaces
-            line = line.strip().lower()
+        with open(file_name) as f:
+            for line in f:
+                # Remove any trailing white spaces
+                line = line.strip().lower()
 
-            # If empty or is a comment skip
-            if not line or line.startswith('#'):
-                continue
+                # If empty or is a comment skip
+                if not line or line.startswith('#'):
+                    continue
 
-            key, _, val = line.partition("=")
+                key, _, val = line.partition("=")
 
-            # Checks if the partition method actually found the seperator
-            if not val:
-                continue
-            # Checks if key is relevant to our config
-            if key in allowed:
-                # Strips any spaces again and removes comments
-                val = val.strip().split(" ", 1)[0]
-                cfg[key.strip()] = val
-                cfg.update()
-    return cfg
+                # Checks if the partition method actually found the seperator
+                if not val:
+                    continue
+                # Checks if key is relevant to our config
+                if key in allowed:
+                    # Strips any spaces again and removes comments
+                    val = val.strip().split(" ", 1)[0]
+                    cfg[key.strip()] = val
+                    cfg.update()
+        return cfg
