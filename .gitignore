@@ -1,6 +1,31 @@
-# # ignore all
-# *
+# Virtual environments
+.venv/
+venv/
+env/
 
-# # But not this
-# !*.py
-# !*/
+# Python cache
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+
+# Build artifacts (the pip package outputs)
+dist/
+build/
+*.egg-info/
+
+# Type checker cache
+.mypy_cache/
+
+# Test cache
+.pytest_cache/
+
+# IDE files (optional but common)
+.vscode/
+.idea/
+
+# The actual generated maze output (we don't want to commit maze.txt)
+*.txt
+# BUT we need config.txt committed, so heres an exception:
+!config.txt
+!config.txt.example
