@@ -17,8 +17,10 @@ clean:
 
 lint:
 	uv run flake8 src/ $(ENTRY)
-	uv run mypy src/ $(ENTRY)
+	uv run mypy src/config src/mazegen
+	uv run mypy $(ENTRY)
 
 lint-strict:
 	uv run flake8 src/ $(ENTRY)
-	uv run mypy src/ $(ENTRY) --strict
+	uv run mypy src/config src/mazegen --strict
+	uv run mypy $(ENTRY) --strict
