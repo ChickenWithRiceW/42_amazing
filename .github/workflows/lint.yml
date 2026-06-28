@@ -1,0 +1,26 @@
+name: Lint  #displayed on Github UI
+
+on:  #when does it run
+    pull_request:  #on every pr opened or updated
+        branches:
+            - main  #only PRs targeting main
+
+jobs:  #what runs?
+    lint:  #job name (arbitrary)
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout code
+              uses: actions/checkout@v4  #built in action: clones repo
+
+            - name: Install uv
+              uses: astral-sh/setup-uv@v5  #official uv action
+
+            - name: Install dependencies
+              run: uv sync  #reads pyproject.toml + uv.lock
+
+            - name: Run flake8
+              run: uv run flake8 src/ a_maze_ing.py
+
+            - name: Run mypy
+              run: uv run mypy src/ a_maze_ing.py
