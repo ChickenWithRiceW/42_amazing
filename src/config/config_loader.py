@@ -1,6 +1,6 @@
 from pydantic import BaseModel, Field, model_validator, field_validator, \
     ValidationError
-from typing import Annotated
+from typing import Annotated, Any
 
 
 class Config(BaseModel):
@@ -20,18 +20,20 @@ class Config(BaseModel):
 
     @field_validator("entry", "exit", mode="before")
     @classmethod
-    def split_entry(cls, v):
-        return tuple(map(int, v.split(",")))
+    def split_entry(cls, v: str) -> tuple[int, int]:
+        x, y = v.split(",")
+        return int(x), int(y)
+        # return tuple(map(int, v.split(",")))
 
     @model_validator(mode="after")
-    def validate(self) -> "Config":
+    def check_entry_exit(self) -> "Config":
         if self.entry == self.exit:
             raise ValueError("ENTRY and EXIT cannot be the same")
         else:
             return self
 
 
-def load_config(file_name: str) -> dict[str, str]:
+def load_config(file_name: str) -> dict[str, Any]:
     """Parses the given config file and returns a dict of k, v pairs
 
     Returns stripped value, key pair. It does not support the "" operator
