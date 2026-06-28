@@ -20,4 +20,10 @@ ignore_missing_imports = true
 disallow_untyped_defs = true
 check_untyped_defs = true
 
+[dependency-groups]
+dev = [
+    "flake8>=7.3.0",
+    "mypy>=2.1.0",
+]
+
 # flake8 doesnt actually read pyproject.toml
