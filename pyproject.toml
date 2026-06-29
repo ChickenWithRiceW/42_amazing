@@ -21,6 +21,9 @@ disallow_untyped_defs = true
 check_untyped_defs = true
 explicit_package_bases = true
 mypy_path = "src"
+plugins = [
+  "pydantic.mypy"
+]
 
 [dependency-groups]
 dev = [
