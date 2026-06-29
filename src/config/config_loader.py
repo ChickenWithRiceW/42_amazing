@@ -1,10 +1,14 @@
 from pydantic import BaseModel, Field, model_validator, field_validator, \
     ValidationError
-from typing import Annotated, Any
+from typing import Annotated, Self
+from rich.console import Console
+
+# Instance to use stderr without clutter in code
+err = Console(stderr=True)
 
 
 class Config(BaseModel):
-    # The constrains will need to be more precise, maze cant be 2x2
+    # TODO: Change constrains to be more precise. Maze cant be 0x0
     width: int = Field(ge=0)
     height: int = Field(ge=0)
     entry: tuple[
@@ -23,69 +27,86 @@ class Config(BaseModel):
     def split_entry(cls, v: str) -> tuple[int, int]:
         x, y = v.split(",")
         return int(x), int(y)
-        # return tuple(map(int, v.split(",")))
 
     @model_validator(mode="after")
-    def check_entry_exit(self) -> "Config":
+    def compare_entry_and_exit(self) -> Self:
         if self.entry == self.exit:
-            raise ValueError("ENTRY and EXIT cannot be the same")
+            raise ValueError("'entry' and 'exit' cannot be the same")
         else:
             return self
 
 
-def load_config(file_name: str) -> dict[str, Any]:
-    """Parses the given config file and returns a dict of k, v pairs
+def load_config(file_name: str) -> dict[str, str]:
+    """Parses the given config file and returns a dict of key=value pairs
 
-    Returns stripped value, key pair. It does not support the "" operator
-    and also strips all spaces.
+    Does not support "" operator or any spaces in the config file.
+    Return key value pairs with all spaces removed.
     """
 
-    allowed = {
-        "width",
-        "height",
-        "entry",
-        "exit",
-        "output_file",
-        "perfect"
-    }
+    err.print(f"Loading config file '{file_name}':")
 
     cfg = {}
-
+    syntax_error = False
     with open(file_name) as f:
         for line in f:
-            # Remove any trailing white spaces
-            line = line.strip().lower()
+            # Removes any white spaces and newline
+            line = line.replace(' ', '').strip().lower()
 
-            # If empty or is a comment skip
+            # If empty after stripping or is a comment skip
             if not line or line.startswith('#'):
                 continue
 
-            key, _, val = line.partition("=")
+            args = line.split('=')
 
-            # Checks if the partition method actually found the seperator
-            if not val:
+            # checks if the list is empty
+            if not args:
                 continue
-            # Checks if key is relevant to our config
-            if key in allowed:
-                # Strips any spaces again and removes comments
-                val = val.strip().split(" ", 1)[0]
-                cfg[key.strip()] = val
-                cfg.update()
+
+            # Checks key value pair has wrong syntax
+            if len(args) != 2:
+                err.print(f" [red][Fail][/red]: Invalid syntax: '{line}'")
+                syntax_error = True
+                continue
+
+            key, value = args
+            # Extracts value without comment on the same line
+            if '#' in value:
+                value = value[:value.find('#')]
+
+            cfg[key] = value
+    if syntax_error:
+        err.print(" [yellow]Expected format[/yellow]: [blue]KEY[/blue]=VALUE")
+    else:
+        err.print(" [[green]Success[/green]]")
+
     return cfg
 
 
 def loading_setup(file_name: str) -> Config | None:
     """Takes in a config file name, loads it and parses it
 
-    Returns Config model when succesful or None if parsing failed
+    Returns Config model when successful or None if parsing failed
     """
     try:
-        config = Config(**load_config(file_name))
+        config_file = load_config(file_name)
+
+        err.print("\nValidating input:")
+        config = Config(**config_file)
     except ValidationError as e:
         for error in e.errors():
+            err.print(" [[red]Fail[/red]]", end='')
+
             msg: str = error.get("msg")
             key = error.get("loc")
-            print(f"Value {key[0]}: {msg}")
-        return None
+            value = error.get("input", "None provided")
+
+            if error.get("type") == "missing":
+                err.print(f" Field {key[0]} is missing")
+            else:
+                err.print(f" Field {key[0]}: {msg} got: '{value}'")
+    except FileNotFoundError:
+        err.print(f" [red]Fail[/red]: No {file_name} found")
     else:
+        err.print(" [[green]Success[/green]]")
         return config
+    return None
