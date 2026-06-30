@@ -60,6 +60,8 @@ class MazeGenerator:
         self.output_file = output_file
         self.perfect = perfect
         self.seed = seed
+        self.grid: list[list[int]] = []
+        self.solution: list[str] = []
 
     def generate(self) -> None:
         """Generate the maze grid using recursive backtracker (iterative DFS).
