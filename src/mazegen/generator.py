@@ -122,6 +122,7 @@ class MazeGenerator:
             row: Row index of the current cell.
             col: Column index of the current cell.
             visited: Set of already visited (row, col) positions.
+            blocked: Set of blocked cells (cannot open any wall)
         Returns:
             List of tuples for each valid neighbour.
         """
