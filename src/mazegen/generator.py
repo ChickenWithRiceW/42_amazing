@@ -168,6 +168,34 @@ class MazeGenerator:
                 if cell == 'X':
                     blocked.add((start_row + r, start_col + c))
 
+    def _add_loops(self, blocked: set[tuple[int, int]]) -> None:
+        candidates = []
+        for r in range(self.height - 1):
+            for c in range(self.width):
+                if (r, c) not in blocked and (r+1, c) not in blocked:
+                    if self.grid[r][c] & Wall.SOUTH:
+                        candidates.append((r, c, Wall.SOUTH))
+
+        for r in range(self.height):
+            for c in range(self.width - 1):
+                if (r, c) not in blocked and (r, c+1) not in blocked:
+                    if self.grid[r][c] & Wall.EAST:
+                        candidates.append((r, c, Wall.EAST))
+
+        random.shuffle(candidates)
+
+    def _creates_3x3_area(self, br: int, bc: int) -> bool:
+        """Return True if the 3x3 block at (br, bc) is fully open"""
+        for r in range(br, br + 3):
+            for c in range(bc, bc + 2):
+                if self.grid[r][c] & Wall.EAST:
+                    return False
+        for r in range(br, br + 2):
+            for c in range(bc, bc + 3):
+                if self.grid[r][c] & Wall.SOUTH:
+                    return False
+        return True
+
     def __str__(self) -> str:
         is_perfect = "Perfect" if self.perfect else "Not perfect"
         return (
