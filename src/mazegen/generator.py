@@ -111,6 +111,9 @@ class MazeGenerator:
                 # Backtrack
                 stack.pop()
 
+        if not self.perfect:
+            self._add_loops(blocked)
+
     def _find_neighbours(
             self, row: int, col: int,
             visited: set[tuple[int, int]],
@@ -183,6 +186,36 @@ class MazeGenerator:
                         candidates.append((r, c, Wall.EAST))
 
         random.shuffle(candidates)
+
+        target = len(candidates) // 7
+        removed = 0
+
+        for r, c, direction in candidates:
+            if removed >= target:
+                break
+
+            dr, dc = DELTA[direction]
+            nr, nc = r + dr, c + dc
+
+            self.grid[r][c] &= ~direction
+            self.grid[nr][nc] &= ~OPPOSITE[direction]
+
+            # CHeck all nearby 3x3 blocks
+            created_open_area = False
+            for br in range(max(0, r - 2), min(self.height - 2, r + 1)):
+                for bc in range(max(0, c - 2), min(self.width - 2, c + 1)):
+                    if self._creates_3x3_area(br, bc):
+                        created_open_area = True
+                        break
+                if created_open_area:
+                    break
+
+            if created_open_area:
+                # UNDO
+                self.grid[r][c] |= direction
+                self.grid[nr][nc] |= OPPOSITE[direction]
+            else:
+                removed += 1
 
     def _creates_3x3_area(self, br: int, bc: int) -> bool:
         """Return True if the 3x3 block at (br, bc) is fully open"""
