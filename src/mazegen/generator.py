@@ -28,6 +28,16 @@ DELTA = {
     Wall.WEST: (0, -1)
 }
 
+PATTERN: list[list[str]] = [
+    ['X', ' ', 'X', ' ', 'X', 'X', 'X'],
+    ['X', ' ', 'X', ' ', ' ', ' ', 'X'],
+    ['X', 'X', 'X', ' ', 'X', 'X', 'X'],
+    [' ', ' ', 'X', ' ', 'X', ' ', ' '],
+    [' ', ' ', 'X', ' ', 'X', 'X', 'X']
+]
+PATTERN_WIDTH = 7
+PATTERN_HEIGHT = 5
+
 
 class MazeGenerator:
     """Generates a 2D maze using the recursive backtracker algorithm.
@@ -72,6 +82,10 @@ class MazeGenerator:
         random.seed(self.seed)
         self.grid = [[0xF] * self.width for _ in range(self.height)]
 
+        blocked: set[tuple[int, int]] = set()
+        if self._check_pattern_fits():
+            self._stamp_pattern(blocked)
+
         visited: set[tuple[int, int]] = set()
         start_col, start_row = self.entry
         stack: list[tuple[int, int]] = [(start_row, start_col)]
@@ -81,7 +95,7 @@ class MazeGenerator:
             row, col = stack[-1]
 
             # Find all valid unvisited neighbours
-            neighbours = self._find_neighbours(row, col, visited)
+            neighbours = self._find_neighbours(row, col, visited, blocked)
             if neighbours:
                 # Pick a random neighbour
                 direction, new_row, new_col = random.choice(neighbours)
@@ -98,9 +112,12 @@ class MazeGenerator:
                 stack.pop()
 
     def _find_neighbours(
-            self, row: int, col: int, visited: set[tuple[int, int]]
+            self, row: int, col: int,
+            visited: set[tuple[int, int]],
+            blocked: set[tuple[int, int]]
             ) -> list[tuple[Wall, int, int]]:
         """Return valid unvisited neighbours of a cell.
+        Also checks for a blocked cells if they are set.
         Args:
             row: Row index of the current cell.
             col: Column index of the current cell.
@@ -116,9 +133,39 @@ class MazeGenerator:
             # Must be inside the grid and not visited yet
             if (0 <= new_row < self.height
                     and 0 <= new_col < self.width
-                    and (new_row, new_col) not in visited):
+                    and (new_row, new_col) not in visited
+                    and (new_row, new_col) not in blocked):
                 neighbours.append((direction, new_row, new_col))
         return neighbours
+
+    def _check_pattern_fits(self) -> bool:
+        """Check if the maze is large enough to fit the 42 pattern.
+        Returns:
+            True if the pattern fits, False otherwise.
+        """
+
+        if (self.width - 2 >= PATTERN_WIDTH
+                and self.height - 2 >= PATTERN_HEIGHT):
+            return True
+        print("\n=== Scheizeschlage man, pattern doesnt fit ===\n")
+        return False
+
+    def _stamp_pattern(self, blocked: set[tuple[int, int]]) -> None:
+        """Populate the blocked set with cells forming the 42 pattern.
+        Calculates the centered position and marks all pattern cells
+        as blocked so the generator routes around them.
+        Args:
+            blocked: Set to populate with (row, col)
+            positions of pattern cells.
+        """
+
+        start_row = (self.height - PATTERN_HEIGHT) // 2
+        start_col = (self.width - PATTERN_WIDTH) // 2
+
+        for r, row in enumerate(PATTERN):
+            for c, cell in enumerate(row):
+                if cell == 'X':
+                    blocked.add((start_row + r, start_col + c))
 
     def __str__(self) -> str:
         is_perfect = "Perfect" if self.perfect else "Not perfect"
