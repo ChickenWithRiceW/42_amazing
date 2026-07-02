@@ -53,41 +53,58 @@ max_y = len(pregen)
 # EXIT=19,14
 # ENTRY=0,0
 
-# y
-# x
-open_list: list[tuple[int, tuple[int, int]]] = []
-visited = set()
-traveled_list = []
-g_score = {}
+# Important dicts and lists
+open_list: list[tuple[int, int, tuple[int, int]]] = []
+closed_set: set = set()
+g_score: dict[tuple[int, int], int] = {}
+parent: dict[tuple[int, int], tuple[int, int]] = {}
 
 
-def start(entry: tuple[int, int], exit: tuple[int, int]) -> None:
+def solver(entry: tuple[int, int], exit: tuple[int, int],
+           maze: list[list[int]]) -> None:
+    # Adding the entry to the open list, giving it a f score of 0 and h = 0 doesnt matter
+    heapq.heappush(open_list, (0, 0, entry))
     g_score[entry] = 0
+    while open_list:
+        _, _, pos = heapq.heappop(open_list)
+        if pos in closed_set:
+            continue  # stale heap entry, already processed
+        closed_set.add(pos)
+        if pos == exit:
+            print("Found exit!")
+            back_trace(pos)
+            return
 
-    heapq.heappush(open_list, (0, entry))   # (f_score, coordinate)
-    neighbours = _find_neighbours(*open_list[-1], visited)
-    visited.add(entry)
+        neighbours = _find_neighbours(pos[0], pos[1], closed_set, maze)
 
-    for neighbour in neighbours:
-        tentative_h = manhattan_distance(neighbour, exit)
-        tentative_g = g_score[entry] + 1
+        for neighbour in neighbours:
+            h = manhattan_distance(neighbour, exit)
+            g = g_score[pos] + 1
+
+            if neighbour not in g_score or g < g_score[neighbour]:
+                g_score[neighbour] = g
+                f = g + h
+                parent[neighbour] = pos
+                heapq.heappush(open_list, (f, h, neighbour))
+    print("Nothing found :(")
 
 
-        if neighbour not in g_score or tentative_g < g_score[neighbour]:
-            g_score[neighbour] = tentative_g
-            f = tentative_g + tentative_h
-            heapq.heappush(open_list, (f, neighbour))
-    
+def back_trace(current_pos: tuple[int, int]):
+    path = [current_pos]
+    while par := parent.get(current_pos):
+        path.append(par)
+        current_pos = par
+    path.reverse()
+    print(path)
+    return path
 
 
 def manhattan_distance(a: tuple, b: tuple) -> int:
     return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
 
-def _find_neighbours(y: int, x: int, visited: set[tuple[int, int]]
-                     ) -> list[tuple[Wall, int, int]]:
-
-
+def _find_neighbours(x: int, y: int, closed: set[tuple[int, int]],
+                     maze: list[list[int]]) -> list[tuple[int, int]]:
     """
     Firstly check if direction is open
     Then check if its in bounds and not visited
@@ -98,16 +115,17 @@ def _find_neighbours(y: int, x: int, visited: set[tuple[int, int]]
     for direction, (dr, dc) in DELTA.items():
 
         # Skip if there is a wall in this direction
-        if pregen[y][x] & direction:
+        if maze[y][x] & direction:
             continue
 
         new_y = y + dr
         new_x = x + dc
         if (0 <= new_y < max_y and 0 <= new_x < max_x
-                and (new_y, new_x) not in visited):
-            neighbours.append((new_y, new_x))
+                and (new_x, new_y) not in closed):
+            neighbours.append((new_x, new_y))
 
     return neighbours
 
 if __name__ == "__main__":
-    start((0, 0), (19, 14))
+    solver((0, 0), (19, 14), pregen)
+    # print(closed_set)
