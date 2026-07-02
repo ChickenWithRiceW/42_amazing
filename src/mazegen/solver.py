@@ -1,6 +1,7 @@
 from enum import IntEnum
 import heapq
 
+
 class Wall(IntEnum):
     """Wall direction flags encoded as bit values.
     Each value represents one wall of a cell. Multiple walls are
@@ -12,6 +13,8 @@ class Wall(IntEnum):
     SOUTH = 4
     WEST = 8
 
+
+# TODO: Would like to change to x,y
 DELTA = {
     Wall.NORTH: (-1, 0),
     Wall.SOUTH: (1, 0),
@@ -20,7 +23,7 @@ DELTA = {
 }
 
 
-
+# ! Only there for testing
 pregen = [
     [11, 9, 3, 9, 3, 9, 5, 5, 5, 5, 3, 13, 1, 5, 5, 5, 3, 9, 3, 11],
     [10, 10, 10, 10, 10, 10, 9, 5, 5, 3, 12, 3, 8, 5, 3, 13, 4, 6, 12, 2],
@@ -44,87 +47,101 @@ pregen = [
     [13, 5, 4, 6, 14, 12, 5, 4, 5, 5, 6, 13, 5, 4, 5, 6, 14, 12, 4, 6]
     ]
 
-max_x = len(pregen[0])
-max_y = len(pregen)
 
-# WIDTH=12
-# HEIGHT=15
-
-# EXIT=19,14
-# ENTRY=0,0
-
-# Important dicts and lists
-open_list: list[tuple[int, int, tuple[int, int]]] = []
-closed_set: set = set()
-g_score: dict[tuple[int, int], int] = {}
-parent: dict[tuple[int, int], tuple[int, int]] = {}
-
-
-def solver(entry: tuple[int, int], exit: tuple[int, int],
-           maze: list[list[int]]) -> None:
-    # Adding the entry to the open list, giving it a f score of 0 and h = 0 doesnt matter
-    heapq.heappush(open_list, (0, 0, entry))
-    g_score[entry] = 0
-    while open_list:
-        _, _, pos = heapq.heappop(open_list)
-        if pos in closed_set:
-            continue  # stale heap entry, already processed
-        closed_set.add(pos)
-        if pos == exit:
-            print("Found exit!")
-            back_trace(pos)
-            return
-
-        neighbours = _find_neighbours(pos[0], pos[1], closed_set, maze)
-
-        for neighbour in neighbours:
-            h = manhattan_distance(neighbour, exit)
-            g = g_score[pos] + 1
-
-            if neighbour not in g_score or g < g_score[neighbour]:
-                g_score[neighbour] = g
-                f = g + h
-                parent[neighbour] = pos
-                heapq.heappush(open_list, (f, h, neighbour))
-    print("Nothing found :(")
-
-
-def back_trace(current_pos: tuple[int, int]):
-    path = [current_pos]
-    while par := parent.get(current_pos):
-        path.append(par)
-        current_pos = par
-    path.reverse()
-    print(path)
-    return path
-
-
-def manhattan_distance(a: tuple, b: tuple) -> int:
-    return abs(a[0] - b[0]) + abs(a[1] - b[1])
-
-
-def _find_neighbours(x: int, y: int, closed: set[tuple[int, int]],
-                     maze: list[list[int]]) -> list[tuple[int, int]]:
+class Solver():
+    """A Solver class that uses the A-* algorithm to find the best path to
+    solve a maze
     """
-    Firstly check if direction is open
-    Then check if its in bounds and not visited
-    """
+    def __init__(self, entry: tuple[int, int], exit: tuple[int, int],
+                 maze: list[list[int]]) -> list[tuple[int, int] | None]:
+        # input
+        self.entry = entry
+        self.exit = exit
+        self.maze = maze
 
-    neighbours: list[tuple[int, int]] = []
+        # Calculated Boundaries
+        self.max_x = len(maze[0])
+        self.max_y = len(maze)
 
-    for direction, (dr, dc) in DELTA.items():
+        # Init
+        self.open_list: list[tuple[int, int, tuple[int, int]]] = []
+        self.closed: set = set()
+        self.g_score: dict[tuple[int, int], int] = {}
+        self.parent: dict[tuple[int, int], tuple[int, int]] = {}
 
-        # Skip if there is a wall in this direction
-        if maze[y][x] & direction:
-            continue
+        # Pushes the entry into the open_list, init with f=0, h=0, pos
+        heapq.heappush(self.open_list, (0, 0, self.entry))
+        self.g_score[self.entry] = 0
 
-        new_y = y + dr
-        new_x = x + dc
-        if (0 <= new_y < max_y and 0 <= new_x < max_x
-                and (new_x, new_y) not in closed):
-            neighbours.append((new_x, new_y))
+    def solver(self) -> None:
+        # As long list is not empty
+        while self.open_list:
+            _, _, current_pos = heapq.heappop(self.open_list)
 
-    return neighbours
+            if current_pos in self.closed:
+                continue
+            self.closed.add(current_pos)
+
+            if current_pos == self.exit:
+                print("Found exit!")
+                self._back_trace(current_pos)
+                return
+
+            neighbours = self._find_neighbours(current_pos)
+
+            for neighbour in neighbours:
+                h = self._manhattan_distance(neighbour, self.exit)
+                g = self.g_score[current_pos] + 1
+
+                if neighbour not in self.g_score or g < self.g_score[neighbour]:
+                    self.g_score[neighbour] = g
+                    f = g + h
+                    self.parent[neighbour] = current_pos
+                    heapq.heappush(self.open_list, (f, h, neighbour))
+        print("Nothing found :(")
+        return None
+
+    def _back_trace(self, current_pos: tuple[int, int]):
+        """Backtraces the parents of given current pos cell
+
+        Returns list of (x,y) tuples from entry to exit
+        """
+        path = [current_pos]
+
+        while par := self.parent.get(current_pos):
+            path.append(par)
+            current_pos = par
+
+        path.reverse()
+        print(path)     # Just for showing remove later
+        return path
+
+    @staticmethod
+    def _manhattan_distance(a: tuple, b: tuple) -> int:
+        return abs(a[0] - b[0]) + abs(a[1] - b[1])
+
+    def _find_neighbours(self, pos: tuple[int, int]) -> list[tuple[int, int]]:
+        """Finds neighbours of pos and returns them if not blocked/visited
+
+        Checks for valid neighbours horizontal or vertical of pos.
+        Returns neighbours that aren't visited or blocked.
+        """
+        x, y = pos
+        neighbours: list[tuple[int, int]] = []
+
+        for direction, (dy, dx) in DELTA.items():
+
+            # Skip if there is a wall in this direction
+            if self.maze[y][x] & direction:
+                continue
+
+            new_y = y + dy
+            new_x = x + dx
+            if (0 <= new_y < self.max_y and 0 <= new_x < self.max_x
+                    and (new_x, new_y) not in self.closed):
+                neighbours.append((new_x, new_y))
+
+        return neighbours
 
 if __name__ == "__main__":
     solver((0, 0), (19, 14), pregen)
