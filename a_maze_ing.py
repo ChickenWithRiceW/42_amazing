@@ -1,5 +1,6 @@
 from src.config import loading_setup
 from mazegen import MazeGenerator, write_maze
+from src.display import render_maze
 
 if __name__ == "__main__":
     cfg = loading_setup("config.txt")
@@ -18,3 +19,4 @@ if __name__ == "__main__":
     gen.generate()
     print("\nGrid:", gen.grid, sep="\n")
     write_maze(gen, ['P', 'E', 'N', 'I', 'S'])
+    render_maze(gen)
