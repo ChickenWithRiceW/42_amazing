@@ -1,6 +1,6 @@
 from rich.console import Console
-from src.mazegen import MazeGenerator
-from src.mazegen.generator import Wall
+from mazegen import MazeGenerator
+from mazegen.generator import Wall
 
 console = Console()
 
@@ -21,7 +21,7 @@ def render_maze(
                 console.print("██", end="")
             else:
                 console.print("  ", end="")
-        console.print("█")  #right border + newline
+        console.print("█")  # right border + newline
 
         # Side wall + interior
         for col in range(gen.width):
@@ -34,6 +34,7 @@ def render_maze(
     for col in range(gen.width):
         console.print("███", end="")
     console.print("█")  # Bottom right corner
+
 
 def run_display(gen: MazeGenerator) -> None:
     """Run the interactive display loop"""
