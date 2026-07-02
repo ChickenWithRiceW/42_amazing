@@ -111,6 +111,9 @@ class MazeGenerator:
                 # Backtrack
                 stack.pop()
 
+        if not self.perfect:
+            self._add_loops(blocked)
+
     def _find_neighbours(
             self, row: int, col: int,
             visited: set[tuple[int, int]],
@@ -122,6 +125,7 @@ class MazeGenerator:
             row: Row index of the current cell.
             col: Column index of the current cell.
             visited: Set of already visited (row, col) positions.
+            blocked: Set of blocked cells (cannot open any wall)
         Returns:
             List of tuples for each valid neighbour.
         """
@@ -166,6 +170,64 @@ class MazeGenerator:
             for c, cell in enumerate(row):
                 if cell == 'X':
                     blocked.add((start_row + r, start_col + c))
+
+    def _add_loops(self, blocked: set[tuple[int, int]]) -> None:
+        candidates = []
+        for r in range(self.height - 1):
+            for c in range(self.width):
+                if (r, c) not in blocked and (r+1, c) not in blocked:
+                    if self.grid[r][c] & Wall.SOUTH:
+                        candidates.append((r, c, Wall.SOUTH))
+
+        for r in range(self.height):
+            for c in range(self.width - 1):
+                if (r, c) not in blocked and (r, c+1) not in blocked:
+                    if self.grid[r][c] & Wall.EAST:
+                        candidates.append((r, c, Wall.EAST))
+
+        random.shuffle(candidates)
+
+        target = len(candidates) // 7
+        removed = 0
+
+        for r, c, direction in candidates:
+            if removed >= target:
+                break
+
+            dr, dc = DELTA[direction]
+            nr, nc = r + dr, c + dc
+
+            self.grid[r][c] &= ~direction
+            self.grid[nr][nc] &= ~OPPOSITE[direction]
+
+            # CHeck all nearby 3x3 blocks
+            created_open_area = False
+            for br in range(max(0, r - 2), min(self.height - 2, r + 1)):
+                for bc in range(max(0, c - 2), min(self.width - 2, c + 1)):
+                    if self._creates_3x3_area(br, bc):
+                        created_open_area = True
+                        break
+                if created_open_area:
+                    break
+
+            if created_open_area:
+                # UNDO
+                self.grid[r][c] |= direction
+                self.grid[nr][nc] |= OPPOSITE[direction]
+            else:
+                removed += 1
+
+    def _creates_3x3_area(self, br: int, bc: int) -> bool:
+        """Return True if the 3x3 block at (br, bc) is fully open"""
+        for r in range(br, br + 3):
+            for c in range(bc, bc + 2):
+                if self.grid[r][c] & Wall.EAST:
+                    return False
+        for r in range(br, br + 2):
+            for c in range(bc, bc + 3):
+                if self.grid[r][c] & Wall.SOUTH:
+                    return False
+        return True
 
     def __str__(self) -> str:
         is_perfect = "Perfect" if self.perfect else "Not perfect"
