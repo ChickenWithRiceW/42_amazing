@@ -1,7 +1,6 @@
 from src.config import loading_setup
 from mazegen import MazeGenerator, write_maze
 from src.display import render_maze
-from src.mazegen.solver import Solver
 
 if __name__ == "__main__":
     cfg = loading_setup("config.txt")
@@ -19,7 +18,8 @@ if __name__ == "__main__":
     print(gen)
     gen.generate()
     print("\nGrid:", gen.grid, sep="\n")
-    # write_maze(gen, ['P', 'E', 'N', 'I', 'S'])
-    solv = Solver(gen.grid)
-    path = solv.solver((0, 0), (30, 30))
-    render_maze(gen, path, True, "magenta", "red")
+
+    path = gen.solve()
+    write_maze(gen)
+    render_maze(gen, path, True, "magenta", "blue")
+    print(gen.solution)

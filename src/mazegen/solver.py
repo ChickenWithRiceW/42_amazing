@@ -1,43 +1,30 @@
-from enum import IntEnum
 import heapq
 from typing import TypeAlias
+from .generator import DELTA, MazeGenerator
+
+DELTA_str = {
+    "N": (-1, 0),
+    "S": (1, 0),
+    "E": (0, 1),
+    "W": (0, -1)
+}
 
 
 Cell: TypeAlias = tuple[int, int]
-
-
-class Wall(IntEnum):
-    """Wall direction flags encoded as bit values.
-    Each value represents one wall of a cell. Multiple walls are
-    combined with bitwise OR. Bit 0=North, 1=East, 2=South, 3=West.
-    """
-
-    NORTH = 1
-    EAST = 2
-    SOUTH = 4
-    WEST = 8
-
-
-# TODO: Would like to change to x,y
-DELTA = {
-    Wall.NORTH: (-1, 0),
-    Wall.SOUTH: (1, 0),
-    Wall.EAST: (0, 1),
-    Wall.WEST: (0, -1)
-}
 
 
 class Solver():
     """A Solver class that uses the A* algorithm to find the best path to
     solve a maze
     """
-    def __init__(self, maze: list[list[int]]) -> None:
+    def __init__(self, maze: MazeGenerator) -> None:
         # input
-        self.maze = maze
+        self.maze = maze.grid
+        self.maze_instance = maze
 
         # Calculated Boundaries
-        self.max_x = len(maze[0])
-        self.max_y = len(maze)
+        self.max_x = maze.width
+        self.max_y = maze.height
 
         # Init
         self.open_list: list[tuple[int, int, Cell]] = []
@@ -45,7 +32,7 @@ class Solver():
         self.g_score: dict[Cell, int] = {}
         self.parent: dict[Cell, Cell] = {}
 
-    def solver(self, entry_pos: Cell, exit_pos: Cell) -> list[Cell] | None:
+    def solver(self, entry_pos: Cell, exit_pos: Cell) -> list[Cell]:
         # Offsetting exit by -1 as maze width and length indexes by n-1
         exit_pos = (exit_pos[0] - 1, exit_pos[1] - 1)
 
@@ -90,13 +77,16 @@ class Solver():
         Returns list of (x,y) tuples from entry to exit
         """
         path = [current_cell]
-
         while par := self.parent.get(current_cell):
             path.append(par)
+            for direction, (dy, dx) in DELTA_str.items():
+                if (current_cell[0] - dx, current_cell[1] - dy) == par:
+                    self.maze_instance.solution.append(direction)
             current_cell = par
 
         # path.append(par)
         path.reverse()
+        self.maze_instance.solution.reverse()
         return path
 
     @staticmethod
