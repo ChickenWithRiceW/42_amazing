@@ -114,6 +114,12 @@ class MazeGenerator:
         if not self.perfect:
             self._add_loops(blocked)
 
+    def solve(self) -> list[tuple[int, int]]:
+        from .solver import Solver
+
+        solve_instance = Solver(self)
+        return solve_instance.solver(self.entry, self.exit)
+
     def _find_neighbours(
             self, row: int, col: int,
             visited: set[tuple[int, int]],

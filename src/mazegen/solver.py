@@ -32,7 +32,7 @@ class Solver():
         self.g_score: dict[Cell, int] = {}
         self.parent: dict[Cell, Cell] = {}
 
-    def solver(self, entry_pos: Cell, exit_pos: Cell) -> list[Cell] | None:
+    def solver(self, entry_pos: Cell, exit_pos: Cell) -> list[Cell]:
         # Offsetting exit by -1 as maze width and length indexes by n-1
         exit_pos = (exit_pos[0] - 1, exit_pos[1] - 1)
 
