@@ -28,7 +28,7 @@ def render_maze(
                 if show_path and (col, row) in path and (col, row - 1) in path:
                     console.print("██", end="", style=path_color)
                 else:
-                    console.print("  ", end="", style=wall_color)
+                    console.print("  ", end="")
 
         console.print("█", style=wall_color)  # right border + newline
 
@@ -41,7 +41,7 @@ def render_maze(
                 if show_path and (col, row) in path and (col - 1, row) in path:
                     console.print("█", end="", style=path_color)
                 else:
-                    console.print(" ", end="", style=wall_color)
+                    console.print(" ", end="")
 
             # Checks if we can draw a normal path or set a entry/exit
             if (col, row) not in path:
