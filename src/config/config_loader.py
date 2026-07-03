@@ -21,6 +21,7 @@ class Config(BaseModel):
     ]
     output_file: str
     perfect: bool
+    seed: int | None = None
 
     @field_validator("entry", "exit", mode="before")
     @classmethod
@@ -92,7 +93,9 @@ def loading_setup(file_name: str) -> Config | None:
 
         err.print("\nValidating input:")
         config = Config(**config_file)
+
     except ValidationError as e:
+        print("[[red]ERROR[/red]]")
         for error in e.errors():
             err.print(" [[red]Fail[/red]]", end='')
 
@@ -104,8 +107,10 @@ def loading_setup(file_name: str) -> Config | None:
                 err.print(f" Field {key[0]} is missing")
             else:
                 err.print(f" Field {key[0]}: {msg} got: '{value}'")
+
     except FileNotFoundError:
         err.print(f" [red]Fail[/red]: No {file_name} found")
+
     else:
         err.print(" [[green]Success[/green]]")
         return config
