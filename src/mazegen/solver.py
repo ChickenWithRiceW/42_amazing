@@ -1,5 +1,9 @@
 from enum import IntEnum
 import heapq
+from typing import TypeAlias
+
+
+Cell: TypeAlias = tuple[int, int]
 
 
 class Wall(IntEnum):
@@ -23,40 +27,12 @@ DELTA = {
 }
 
 
-# ! Only there for testing
-pregen = [
-    [11, 9, 3, 9, 3, 9, 5, 5, 5, 5, 3, 13, 1, 5, 5, 5, 3, 9, 3, 11],
-    [10, 10, 10, 10, 10, 10, 9, 5, 5, 3, 12, 3, 8, 5, 3, 13, 4, 6, 12, 2],
-    [12, 6, 12, 6, 10, 10, 12, 5, 7, 12, 5, 2, 12, 7, 12, 3, 13, 3, 9, 6],
-    [9, 5, 7, 9, 6, 10, 9, 5, 5, 5, 3, 12, 5, 5, 5, 6, 9, 6, 10, 11],
-    [8, 5, 5, 6, 9, 4, 4, 5, 7, 9, 6, 9, 5, 3, 9, 3, 8, 5, 6, 10],
-    [10, 13, 5, 1, 6, 9, 3, 9, 5, 6, 9, 6, 11, 10, 10, 14, 10, 13, 1, 2],
-    [12, 5, 3, 10, 9, 6, 12, 6, 9, 5, 6, 9, 2, 12, 2, 9, 6, 9, 6, 10],
-    [13, 3, 10, 14, 10, 13, 5, 5, 2, 9, 5, 6, 10, 11, 10, 12, 5, 6, 9, 6],
-    [9, 6, 10, 9, 6, 9, 5, 3, 10, 10, 13, 5, 4, 6, 12, 5, 5, 3, 10, 11],
-    [10, 9, 6, 10, 13, 2, 11, 10, 10, 12, 1, 5, 5, 5, 1, 3, 9, 6, 10, 10],
-    [10, 12, 5, 6, 9, 6, 8, 6, 12, 3, 14, 9, 5, 3, 14, 12, 2, 9, 6, 10],
-    [8, 1, 5, 3, 10, 11, 10, 9, 5, 2, 9, 6, 11, 12, 5, 3, 14, 10, 9, 2],
-    [10, 10, 9, 6, 10, 12, 4, 6, 9, 6, 10, 13, 0, 1, 7, 12, 3, 10, 14, 10],
-    [14, 10, 10, 9, 2, 9, 3, 9, 4, 7, 12, 3, 14, 10, 9, 5, 6, 10, 9, 6],
-    [9, 6, 12, 6, 14, 10, 10, 12, 3, 9, 3, 10, 9, 2, 12, 5, 3, 10, 8, 3],
-    [12, 3, 9, 5, 5, 6, 12, 3, 14, 10, 10, 12, 6, 10, 9, 7, 12, 6, 14, 10],
-    [9, 6, 10, 13, 5, 5, 3, 12, 3, 10, 12, 5, 5, 6, 12, 5, 1, 5, 3, 10],
-    [8, 5, 6, 9, 5, 5, 2, 11, 10, 10, 13, 1, 3, 13, 1, 5, 6, 11, 10, 10],
-    [12, 5, 3, 10, 9, 3, 12, 2, 12, 6, 9, 6, 12, 3, 12, 3, 9, 2, 10, 10],
-    [13, 5, 4, 6, 14, 12, 5, 4, 5, 5, 6, 13, 5, 4, 5, 6, 14, 12, 4, 6]
-    ]
-
-
 class Solver():
-    """A Solver class that uses the A-* algorithm to find the best path to
+    """A Solver class that uses the A* algorithm to find the best path to
     solve a maze
     """
-    def __init__(self, entry: tuple[int, int], exit: tuple[int, int],
-                 maze: list[list[int]]) -> list[tuple[int, int] | None]:
+    def __init__(self, maze: list[list[int]]) -> None:
         # input
-        self.entry = entry
-        self.exit = exit
         self.maze = maze
 
         # Calculated Boundaries
@@ -64,74 +40,81 @@ class Solver():
         self.max_y = len(maze)
 
         # Init
-        self.open_list: list[tuple[int, int, tuple[int, int]]] = []
-        self.closed: set = set()
-        self.g_score: dict[tuple[int, int], int] = {}
-        self.parent: dict[tuple[int, int], tuple[int, int]] = {}
+        self.open_list: list[tuple[int, int, Cell]] = []
+        self.closed: set[Cell] = set()
+        self.g_score: dict[Cell, int] = {}
+        self.parent: dict[Cell, Cell] = {}
+
+    def solver(self, entry_pos: Cell, exit_pos: Cell) -> list[Cell] | None:
+        # Offsetting exit by -1 as maze width and length indexes by n-1
+        exit_pos = (exit_pos[0] - 1, exit_pos[1] - 1)
 
         # Pushes the entry into the open_list, init with f=0, h=0, pos
-        heapq.heappush(self.open_list, (0, 0, self.entry))
-        self.g_score[self.entry] = 0
+        heapq.heappush(self.open_list, (0, 0, entry_pos))
+        self.g_score[entry_pos] = 0
 
-    def solver(self) -> None:
         # As long list is not empty
         while self.open_list:
-            _, _, current_pos = heapq.heappop(self.open_list)
+            # Grabs only the cell not the {f, h} data
+            current_cell = heapq.heappop(self.open_list)[2]
 
-            if current_pos in self.closed:
+            if current_cell in self.closed:
                 continue
-            self.closed.add(current_pos)
 
-            if current_pos == self.exit:
-                print("Found exit!")
-                self._back_trace(current_pos)
-                return
+            # Adds to closed as this was the best f cost
+            # with a constant heuristic it cant get any better
+            # as the best path was figured out
+            self.closed.add(current_cell)
 
-            neighbours = self._find_neighbours(current_pos)
+            if current_cell == exit_pos:
+                return self._back_trace(current_cell)
+
+            neighbours = self._find_neighbours(current_cell)
 
             for neighbour in neighbours:
-                h = self._manhattan_distance(neighbour, self.exit)
-                g = self.g_score[current_pos] + 1
+                h = self._manhattan_distance(neighbour, exit_pos)
+                g = self.g_score[current_cell] + 1
 
-                if neighbour not in self.g_score or g < self.g_score[neighbour]:
+                if (neighbour not in self.g_score
+                        or g < self.g_score[neighbour]):
+
                     self.g_score[neighbour] = g
                     f = g + h
-                    self.parent[neighbour] = current_pos
+                    self.parent[neighbour] = current_cell
                     heapq.heappush(self.open_list, (f, h, neighbour))
-        print("Nothing found :(")
         return None
 
-    def _back_trace(self, current_pos: tuple[int, int]):
+    def _back_trace(self, current_cell: Cell) -> list[Cell]:
         """Backtraces the parents of given current pos cell
 
         Returns list of (x,y) tuples from entry to exit
         """
-        path = [current_pos]
+        path = [current_cell]
 
-        while par := self.parent.get(current_pos):
+        while par := self.parent.get(current_cell):
             path.append(par)
-            current_pos = par
+            current_cell = par
 
+        # path.append(par)
         path.reverse()
-        print(path)     # Just for showing remove later
         return path
 
     @staticmethod
-    def _manhattan_distance(a: tuple, b: tuple) -> int:
+    def _manhattan_distance(a: Cell, b: Cell) -> int:
         return abs(a[0] - b[0]) + abs(a[1] - b[1])
 
-    def _find_neighbours(self, pos: tuple[int, int]) -> list[tuple[int, int]]:
-        """Finds neighbours of pos and returns them if not blocked/visited
+    def _find_neighbours(self, cell: Cell) -> list[Cell]:
+        """Finds neighbours of cell and returns them if not blocked/closed
 
-        Checks for valid neighbours horizontal or vertical of pos.
-        Returns neighbours that aren't visited or blocked.
+        Checks for valid neighbours horizontal or vertical of cell.
+        Returns neighbours that aren't closed or blocked in a list.
         """
-        x, y = pos
-        neighbours: list[tuple[int, int]] = []
+        x, y = cell
+        neighbours: list[Cell] = []
 
         for direction, (dy, dx) in DELTA.items():
 
-            # Skip if there is a wall in this direction
+            # Skip if neighbour is not accessible
             if self.maze[y][x] & direction:
                 continue
 
@@ -142,7 +125,3 @@ class Solver():
                 neighbours.append((new_x, new_y))
 
         return neighbours
-
-if __name__ == "__main__":
-    solver((0, 0), (19, 14), pregen)
-    # print(closed_set)
