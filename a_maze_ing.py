@@ -1,8 +1,7 @@
 import sys
 from src.config import loading_setup
-from mazegen import MazeGenerator, write_maze
-from mazegen.solver import Solver, NoSolutionError
-from src.display import render_maze
+from mazegen import MazeGenerator
+from src.display import run_display
 
 if __name__ == "__main__":
     if len(sys.argv) != 2:
@@ -24,12 +23,4 @@ if __name__ == "__main__":
     )
     gen.generate()
 
-    try:
-        solver = Solver(gen)
-        path = solver.solver(gen.entry, gen.exit)
-    except NoSolutionError as e:
-        print(f"Error: {e}")
-        sys.exit(1)
-
-    write_maze(gen)
-    render_maze(gen, path, True, "magenta", "blue")
+    run_display(gen)
