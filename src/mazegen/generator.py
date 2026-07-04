@@ -63,6 +63,20 @@ class MazeGenerator:
             perfect: bool,
             seed: int | None
             ) -> None:
+        if width < 2 or height < 2:
+            raise ValueError(
+                f"Width and height must be at least 2, got {width}x{height}"
+            )
+        if not (0 <= entry[0] < width and 0 <= entry[1] < height):
+            raise ValueError(
+                f"Entry {entry} is out of bounds for a {width}x{height} maze"
+            )
+        if not (0 <= exit[0] < width and 0 <= exit[1] < height):
+            raise ValueError(
+                f"Exit {exit} is out of bounds for a {width}x{height} maze"
+            )
+        if entry == exit:
+            raise ValueError("Entry and exit cannot be the same cell")
         self.width = width
         self.height = height
         self.entry = entry
