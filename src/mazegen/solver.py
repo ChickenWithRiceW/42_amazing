@@ -78,6 +78,7 @@ class Solver():
 
         Returns list of (x,y) tuples from entry to exit
         """
+        self.maze_instance.solution = []
         path = [current_cell]
         while par := self.parent.get(current_cell):
             path.append(par)
