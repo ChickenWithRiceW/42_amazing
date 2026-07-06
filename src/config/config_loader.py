@@ -1,10 +1,15 @@
 from pydantic import BaseModel, Field, model_validator, field_validator, \
     ValidationError
-from typing import Annotated, Self
+from typing import Annotated
 from rich.console import Console
 
 # Instance to use stderr without clutter in code
 err = Console(stderr=True)
+
+
+class ConfigSyntaxError(Exception):
+    def __init__(self) -> None:
+        super().__init__("Config syntax error")
 
 
 class Config(BaseModel):
@@ -30,7 +35,7 @@ class Config(BaseModel):
         return int(x), int(y)
 
     @model_validator(mode="after")
-    def compare_entry_and_exit(self) -> Self:
+    def compare_entry_and_exit(self) -> "Config":
         if self.entry == self.exit:
             raise ValueError("'entry' and 'exit' cannot be the same")
         else:
@@ -50,7 +55,8 @@ def load_config(file_name: str) -> dict[str, str]:
     syntax_error = False
     with open(file_name) as f:
         for line in f:
-            # Removes any white spaces and newline
+            # ! Should this really make everything lower?
+            # Removes any white spaces and newlines
             line = line.replace(' ', '').strip().lower()
 
             # If empty after stripping or is a comment skip
@@ -59,12 +65,8 @@ def load_config(file_name: str) -> dict[str, str]:
 
             args = line.split('=')
 
-            # checks if the list is empty
-            if not args:
-                continue
-
             # Checks key value pair has wrong syntax
-            if len(args) != 2:
+            if len(args) != 2 or not args[0] or not args[1]:
                 err.print(f" [red][Fail][/red]: Invalid syntax: '{line}'")
                 syntax_error = True
                 continue
@@ -76,7 +78,7 @@ def load_config(file_name: str) -> dict[str, str]:
 
             cfg[key] = value
     if syntax_error:
-        err.print(" [yellow]Expected format[/yellow]: [blue]KEY[/blue]=VALUE")
+        raise ConfigSyntaxError()
     else:
         err.print(" [[green]Success[/green]]")
 
@@ -95,7 +97,7 @@ def loading_setup(file_name: str) -> Config | None:
         config = Config(**config_file)
 
     except ValidationError as e:
-        print("[[red]ERROR[/red]]")
+        err.print("[[red]ERROR[/red]]")
         for error in e.errors():
             err.print(" [[red]Fail[/red]]", end='')
 
@@ -104,12 +106,15 @@ def loading_setup(file_name: str) -> Config | None:
             value = error.get("input", "None provided")
 
             if error.get("type") == "missing":
-                err.print(f" Field {key[0]} is missing")
+                err.print(f" Field '{key[0]}' is missing")
             else:
-                err.print(f" Field {key[0]}: {msg} got: '{value}'")
+                err.print(f" Field '{key[0]}': {msg} got: '{value}'")
 
     except FileNotFoundError:
         err.print(f" [red]Fail[/red]: No {file_name} found")
+
+    except ConfigSyntaxError:
+        err.print(" [yellow]Expected format[/yellow]: [blue]KEY[/blue]=VALUE")
 
     else:
         err.print(" [[green]Success[/green]]")
