@@ -3,10 +3,10 @@ from typing import TypeAlias
 from .generator import DELTA, MazeGenerator
 
 DELTA_str = {
-    "N": (-1, 0),
-    "S": (1, 0),
-    "E": (0, 1),
-    "W": (0, -1)
+    "N": (0, -1),
+    "S": (0, 1),
+    "E": (1, 0),
+    "W": (-1, 0)
 }
 
 
@@ -82,7 +82,7 @@ class Solver():
         path = [current_cell]
         while par := self.parent.get(current_cell):
             path.append(par)
-            for direction, (dy, dx) in DELTA_str.items():
+            for direction, (dx, dy) in DELTA_str.items():
                 if (current_cell[0] - dx, current_cell[1] - dy) == par:
                     self.maze_instance.solution.append(direction)
             current_cell = par
@@ -104,14 +104,14 @@ class Solver():
         x, y = cell
         neighbours: list[Cell] = []
 
-        for direction, (dy, dx) in DELTA.items():
+        for direction, (dx, dy) in DELTA.items():
 
             # Skip if neighbour is not accessible
             if self.maze[y][x] & direction:
                 continue
 
-            new_y = y + dy
             new_x = x + dx
+            new_y = y + dy
             if (0 <= new_y < self.max_y and 0 <= new_x < self.max_x
                     and (new_x, new_y) not in self.closed):
                 neighbours.append((new_x, new_y))
