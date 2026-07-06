@@ -63,6 +63,7 @@ class MazeGenerator:
             perfect: bool,
             seed: int | None
             ) -> None:
+
         if width < 2 or height < 2:
             raise ValueError(
                 f"Width and height must be at least 2, got {width}x{height}"
@@ -77,6 +78,7 @@ class MazeGenerator:
             )
         if entry == exit:
             raise ValueError("Entry and exit cannot be the same cell")
+
         self.width = width
         self.height = height
         self.entry = entry
@@ -89,7 +91,7 @@ class MazeGenerator:
 
     def generate(self) -> None:
         """Generate the maze grid using recursive backtracker (iterative DFS).
-        Seeds the random generator, initialises all cells as fully walled,
+        Seeds the random generator, initializes all cells as fully walled,
         then carves passages until all cells are visited. Sets self.grid.
         """
 
@@ -171,7 +173,7 @@ class MazeGenerator:
         if (self.width - 2 >= PATTERN_WIDTH
                 and self.height - 2 >= PATTERN_HEIGHT):
             return True
-        print("\n=== Scheizeschlage man, pattern doesnt fit ===\n")
+        print("\n=== 42 pattern doesn't fit ===\n")
         return False
 
     def _stamp_pattern(self, blocked: set[tuple[int, int]]) -> None:
@@ -220,7 +222,7 @@ class MazeGenerator:
             self.grid[y][x] &= ~direction
             self.grid[ny][nx] &= ~OPPOSITE[direction]
 
-            # CHeck all nearby 3x3 blocks
+            # Check all nearby 3x3 blocks
             created_open_area = False
             for by in range(max(0, y - 2), min(self.height - 2, y + 1)):
                 for bx in range(max(0, x - 2), min(self.width - 2, x + 1)):
