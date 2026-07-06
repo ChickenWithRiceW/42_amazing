@@ -90,7 +90,9 @@ def run_display(gen: MazeGenerator) -> None:
     while True:
         render_maze(gen, path, show_path, WALL_COLORS[color], path_color)
         console.print(
-            "[1] Regenerate  [2] Toggle path  [3] Wall color  [[cyan]q[/cyan]] Quit"
+            "[1] Regenerate  "
+            "[2] Toggle path  "
+            "[3] Wall color  [[cyan]q[/cyan]] Quit"
         )
         choice = input("> ").strip().lower()
 
