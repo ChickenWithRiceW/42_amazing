@@ -1,6 +1,5 @@
-from pydantic import BaseModel, Field, model_validator, field_validator, \
+from pydantic import BaseModel, field_validator, \
     ValidationError
-from typing import Annotated
 from rich.console import Console
 
 # Instance to use stderr without clutter in code
@@ -14,16 +13,10 @@ class ConfigSyntaxError(Exception):
 
 class Config(BaseModel):
     # TODO: Change constrains to be more precise. Maze cant be 0x0
-    width: int = Field(ge=0)
-    height: int = Field(ge=0)
-    entry: tuple[
-        Annotated[int, Field(ge=0)],
-        Annotated[int, Field(ge=0)],
-    ]
-    exit: tuple[
-        Annotated[int, Field(ge=0)],
-        Annotated[int, Field(ge=0)],
-    ]
+    width: int
+    height: int
+    entry: tuple[int, int]
+    exit: tuple[int, int]
     output_file: str
     perfect: bool
     seed: int | None = None
@@ -33,13 +26,6 @@ class Config(BaseModel):
     def split_entry(cls, v: str) -> tuple[int, int]:
         x, y = v.split(",")
         return int(x), int(y)
-
-    @model_validator(mode="after")
-    def compare_entry_and_exit(self) -> "Config":
-        if self.entry == self.exit:
-            raise ValueError("'entry' and 'exit' cannot be the same")
-        else:
-            return self
 
 
 def load_config(file_name: str) -> dict[str, str]:
@@ -55,15 +41,17 @@ def load_config(file_name: str) -> dict[str, str]:
     syntax_error = False
     with open(file_name) as f:
         for line in f:
-            # ! Should this really make everything lower?
             # Removes any white spaces and newlines
-            line = line.replace(' ', '').strip().lower()
+            line = line.replace(' ', '').strip()
 
             # If empty after stripping or is a comment skip
             if not line or line.startswith('#'):
                 continue
 
             args = line.split('=')
+
+            # Only lower keys to match pydantic requirements
+            args[0] = args[0].lower()
 
             # Checks key value pair has wrong syntax
             if len(args) != 2 or not args[0] or not args[1]:
