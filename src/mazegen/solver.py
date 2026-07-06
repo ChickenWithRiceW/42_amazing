@@ -13,6 +13,11 @@ DELTA_str = {
 Cell: TypeAlias = tuple[int, int]
 
 
+class NoSolutionError(Exception):
+    def __init__(self) -> None:
+        super().__init__("No solution can be found")
+
+
 class Solver():
     """A Solver class that uses the A* algorithm to find the best path to
     solve a maze
@@ -33,9 +38,6 @@ class Solver():
         self.parent: dict[Cell, Cell] = {}
 
     def solver(self, entry_pos: Cell, exit_pos: Cell) -> list[Cell]:
-        # Offsetting exit by -1 as maze width and length indexes by n-1
-        exit_pos = (exit_pos[0] - 1, exit_pos[1] - 1)
-
         # Pushes the entry into the open_list, init with f=0, h=0, pos
         heapq.heappush(self.open_list, (0, 0, entry_pos))
         self.g_score[entry_pos] = 0
@@ -69,7 +71,7 @@ class Solver():
                     f = g + h
                     self.parent[neighbour] = current_cell
                     heapq.heappush(self.open_list, (f, h, neighbour))
-        return None
+        raise NoSolutionError()
 
     def _back_trace(self, current_cell: Cell) -> list[Cell]:
         """Backtraces the parents of given current pos cell
@@ -84,7 +86,6 @@ class Solver():
                     self.maze_instance.solution.append(direction)
             current_cell = par
 
-        # path.append(par)
         path.reverse()
         self.maze_instance.solution.reverse()
         return path

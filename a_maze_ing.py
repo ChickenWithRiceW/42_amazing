@@ -1,11 +1,17 @@
+import sys
 from src.config import loading_setup
-from mazegen import MazeGenerator, write_maze
-from src.display import render_maze
+from mazegen import MazeGenerator
+from src.display import run_display
 
 if __name__ == "__main__":
-    cfg = loading_setup("config.txt")
+    if len(sys.argv) != 2:
+        print(f"Usage: python3 {sys.argv[0]} <config_file>")
+        sys.exit(1)
+
+    cfg = loading_setup(sys.argv[1])
     if not cfg:
-        exit(0)
+        sys.exit(1)
+
     gen = MazeGenerator(
         cfg.width,
         cfg.height,
@@ -13,13 +19,8 @@ if __name__ == "__main__":
         cfg.exit,
         cfg.output_file,
         cfg.perfect,
-        None   # ! keine seed attribute in Config bitte fixen danke
+        cfg.seed
     )
-    print(gen)
     gen.generate()
-    print("\nGrid:", gen.grid, sep="\n")
 
-    path = gen.solve()
-    write_maze(gen)
-    render_maze(gen, path, True, "magenta", "blue")
-    print(gen.solution)
+    run_display(gen)
