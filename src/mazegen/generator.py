@@ -193,6 +193,11 @@ class MazeGenerator:
                 if cell == 'X':
                     blocked.add((start_x + x, start_y + y))
 
+        # Entry/exit must stay reachable even if they fall inside the
+        # pattern's footprint, otherwise the maze becomes unsolvable.
+        # blocked.discard(self.entry)
+        # blocked.discard(self.exit)
+
     def _add_loops(self, blocked: set[tuple[int, int]]) -> None:
         candidates = []
         for y in range(self.height - 1):

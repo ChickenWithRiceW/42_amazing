@@ -8,6 +8,9 @@ console = Console()
 
 WALL_COLORS = ["white", "cyan", "yellow", "green"]
 
+# Instance to use stderr without clutter in code
+err = Console(stderr=True)
+
 
 def render_maze(
         gen: MazeGenerator,
@@ -44,19 +47,18 @@ def render_maze(
                     console.print("█", end="", style=path_color)
                 else:
                     console.print(" ", end="")
-
+            # Entry
+            if (col, row) == gen.entry:
+                console.print("██", end="", style=entry_color)
+            # Exit
+            elif (col, row) == gen.exit:
+                console.print("██", end="", style=exit_color)
             # Checks if we can draw a normal path or set a entry/exit
-            if (col, row) not in path:
+            elif (col, row) not in path:
                 console.print("  ", end="")
             else:
-                # Entry
-                if (col, row) == path[0]:
-                    console.print("██", end="", style=entry_color)
-                # Exit
-                elif (col, row) == path[-1]:
-                    console.print("██", end="", style=exit_color)
                 # Path
-                elif show_path:
+                if show_path:
                     console.print("██", end="", style=path_color)
                 else:
                     console.print("  ", end="")
@@ -73,7 +75,7 @@ def _solve_maze(gen: MazeGenerator) -> list[tuple[int, int]]:
         solver = Solver(gen)
         path = solver.solver(gen.entry, gen.exit)
     except NoSolutionError as e:
-        print(f"Error: {e}")
+        err.print(f"[[red]Error[/red]]: {e}")
         path = []
 
     return path
