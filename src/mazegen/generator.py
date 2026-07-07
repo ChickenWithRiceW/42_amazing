@@ -22,10 +22,10 @@ OPPOSITE = {
 }
 
 DELTA = {
-    Wall.NORTH: (-1, 0),
-    Wall.SOUTH: (1, 0),
-    Wall.EAST: (0, 1),
-    Wall.WEST: (0, -1)
+    Wall.NORTH: (0, -1),
+    Wall.SOUTH: (0, 1,),
+    Wall.EAST: (1, 0),
+    Wall.WEST: (-1, 0)
 }
 
 PATTERN: list[list[str]] = [
@@ -63,20 +63,22 @@ class MazeGenerator:
             perfect: bool,
             seed: int | None
             ) -> None:
+
         if width < 2 or height < 2:
             raise ValueError(
-                f"Width and height must be at least 2, got {width}x{height}"
+                f"Width and height must be at least 2, got '{width}x{height}'"
             )
         if not (0 <= entry[0] < width and 0 <= entry[1] < height):
             raise ValueError(
-                f"Entry {entry} is out of bounds for a {width}x{height} maze"
+                f"Entry {entry} is out of bounds for a '{width}x{height}' maze"
             )
         if not (0 <= exit[0] < width and 0 <= exit[1] < height):
             raise ValueError(
-                f"Exit {exit} is out of bounds for a {width}x{height} maze"
+                f"Exit {exit} is out of bounds for a '{width}x{height}' maze"
             )
         if entry == exit:
             raise ValueError("Entry and exit cannot be the same cell")
+
         self.width = width
         self.height = height
         self.entry = entry
@@ -89,7 +91,7 @@ class MazeGenerator:
 
     def generate(self) -> None:
         """Generate the maze grid using recursive backtracker (iterative DFS).
-        Seeds the random generator, initialises all cells as fully walled,
+        Seeds the random generator, initializes all cells as fully walled,
         then carves passages until all cells are visited. Sets self.grid.
         """
 
@@ -101,26 +103,26 @@ class MazeGenerator:
             self._stamp_pattern(blocked)
 
         visited: set[tuple[int, int]] = set()
-        start_col, start_row = self.entry
-        stack: list[tuple[int, int]] = [(start_row, start_col)]
-        visited.add((start_row, start_col))
+        start_x, start_y = self.entry
+        stack: list[tuple[int, int]] = [(start_x, start_y)]
+        visited.add((start_x, start_y))
 
         while stack:
-            row, col = stack[-1]
+            x, y = stack[-1]
 
             # Find all valid unvisited neighbours
-            neighbours = self._find_neighbours(row, col, visited, blocked)
+            neighbours = self._find_neighbours(x, y, visited, blocked)
             if neighbours:
                 # Pick a random neighbour
-                direction, new_row, new_col = random.choice(neighbours)
+                direction, new_x, new_y = random.choice(neighbours)
 
                 # Remove a wall between current cell and chosen neighbour
-                self.grid[row][col] &= ~direction
-                self.grid[new_row][new_col] &= ~OPPOSITE[direction]
+                self.grid[y][x] &= ~direction
+                self.grid[new_y][new_x] &= ~OPPOSITE[direction]
 
                 # Mark neighbour visited and push onto stack
-                visited.add((new_row, new_col))
-                stack.append((new_row, new_col))
+                visited.add((new_x, new_y))
+                stack.append((new_x, new_y))
             else:
                 # Backtrack
                 stack.pop()
@@ -135,31 +137,31 @@ class MazeGenerator:
         return solve_instance.solver(self.entry, self.exit)
 
     def _find_neighbours(
-            self, row: int, col: int,
+            self, x: int, y: int,
             visited: set[tuple[int, int]],
             blocked: set[tuple[int, int]]
             ) -> list[tuple[Wall, int, int]]:
         """Return valid unvisited neighbours of a cell.
         Also checks for a blocked cells if they are set.
         Args:
-            row: Row index of the current cell.
-            col: Column index of the current cell.
-            visited: Set of already visited (row, col) positions.
+            x: Column index of the current cell.
+            y: Row index of the current cell.
+            visited: Set of already visited (x, y) positions.
             blocked: Set of blocked cells (cannot open any wall)
         Returns:
             List of tuples for each valid neighbour.
         """
 
         neighbours: list[tuple[Wall, int, int]] = []
-        for direction, (dr, dc) in DELTA.items():
-            new_row = row + dr
-            new_col = col + dc
+        for direction, (dx, dy) in DELTA.items():
+            new_x = x + dx
+            new_y = y + dy
             # Must be inside the grid and not visited yet
-            if (0 <= new_row < self.height
-                    and 0 <= new_col < self.width
-                    and (new_row, new_col) not in visited
-                    and (new_row, new_col) not in blocked):
-                neighbours.append((direction, new_row, new_col))
+            if (0 <= new_y < self.height
+                    and 0 <= new_x < self.width
+                    and (new_x, new_y) not in visited
+                    and (new_x, new_y) not in blocked):
+                neighbours.append((direction, new_x, new_y))
         return neighbours
 
     def _check_pattern_fits(self) -> bool:
@@ -171,7 +173,7 @@ class MazeGenerator:
         if (self.width - 2 >= PATTERN_WIDTH
                 and self.height - 2 >= PATTERN_HEIGHT):
             return True
-        print("\n=== Scheizeschlage man, pattern doesnt fit ===\n")
+        print("\n=== 42 pattern doesn't fit ===\n")
         return False
 
     def _stamp_pattern(self, blocked: set[tuple[int, int]]) -> None:
@@ -179,52 +181,52 @@ class MazeGenerator:
         Calculates the centered position and marks all pattern cells
         as blocked so the generator routes around them.
         Args:
-            blocked: Set to populate with (row, col)
+            blocked: Set to populate with (x, y)
             positions of pattern cells.
         """
 
-        start_row = (self.height - PATTERN_HEIGHT) // 2
-        start_col = (self.width - PATTERN_WIDTH) // 2
+        start_x = (self.width - PATTERN_WIDTH) // 2
+        start_y = (self.height - PATTERN_HEIGHT) // 2
 
-        for r, row in enumerate(PATTERN):
-            for c, cell in enumerate(row):
+        for y, row in enumerate(PATTERN):
+            for x, cell in enumerate(row):
                 if cell == 'X':
-                    blocked.add((start_row + r, start_col + c))
+                    blocked.add((start_x + x, start_y + y))
 
     def _add_loops(self, blocked: set[tuple[int, int]]) -> None:
         candidates = []
-        for r in range(self.height - 1):
-            for c in range(self.width):
-                if (r, c) not in blocked and (r+1, c) not in blocked:
-                    if self.grid[r][c] & Wall.SOUTH:
-                        candidates.append((r, c, Wall.SOUTH))
+        for y in range(self.height - 1):
+            for x in range(self.width):
+                if (x, y) not in blocked and (x, y+1) not in blocked:
+                    if self.grid[y][x] & Wall.SOUTH:
+                        candidates.append((x, y, Wall.SOUTH))
 
-        for r in range(self.height):
-            for c in range(self.width - 1):
-                if (r, c) not in blocked and (r, c+1) not in blocked:
-                    if self.grid[r][c] & Wall.EAST:
-                        candidates.append((r, c, Wall.EAST))
+        for y in range(self.height):
+            for x in range(self.width - 1):
+                if (x, y) not in blocked and (x+1, y) not in blocked:
+                    if self.grid[y][x] & Wall.EAST:
+                        candidates.append((x, y, Wall.EAST))
 
         random.shuffle(candidates)
 
         target = len(candidates) // 7
         removed = 0
 
-        for r, c, direction in candidates:
+        for x, y, direction in candidates:
             if removed >= target:
                 break
 
-            dr, dc = DELTA[direction]
-            nr, nc = r + dr, c + dc
+            dx, dy = DELTA[direction]
+            nx, ny = x + dx, y + dy
 
-            self.grid[r][c] &= ~direction
-            self.grid[nr][nc] &= ~OPPOSITE[direction]
+            self.grid[y][x] &= ~direction
+            self.grid[ny][nx] &= ~OPPOSITE[direction]
 
-            # CHeck all nearby 3x3 blocks
+            # Check all nearby 3x3 blocks
             created_open_area = False
-            for br in range(max(0, r - 2), min(self.height - 2, r + 1)):
-                for bc in range(max(0, c - 2), min(self.width - 2, c + 1)):
-                    if self._creates_3x3_area(br, bc):
+            for by in range(max(0, y - 2), min(self.height - 2, y + 1)):
+                for bx in range(max(0, x - 2), min(self.width - 2, x + 1)):
+                    if self._creates_3x3_area(bx, by):
                         created_open_area = True
                         break
                 if created_open_area:
@@ -232,20 +234,20 @@ class MazeGenerator:
 
             if created_open_area:
                 # UNDO
-                self.grid[r][c] |= direction
-                self.grid[nr][nc] |= OPPOSITE[direction]
+                self.grid[y][x] |= direction
+                self.grid[ny][nx] |= OPPOSITE[direction]
             else:
                 removed += 1
 
-    def _creates_3x3_area(self, br: int, bc: int) -> bool:
-        """Return True if the 3x3 block at (br, bc) is fully open"""
-        for r in range(br, br + 3):
-            for c in range(bc, bc + 2):
-                if self.grid[r][c] & Wall.EAST:
+    def _creates_3x3_area(self, bx: int, by: int) -> bool:
+        """Return True if the 3x3 block at (bx, by) is fully open"""
+        for y in range(by, by + 3):
+            for x in range(bx, bx + 2):
+                if self.grid[y][x] & Wall.EAST:
                     return False
-        for r in range(br, br + 2):
-            for c in range(bc, bc + 3):
-                if self.grid[r][c] & Wall.SOUTH:
+        for y in range(by, by + 2):
+            for x in range(bx, bx + 3):
+                if self.grid[y][x] & Wall.SOUTH:
                     return False
         return True
 
